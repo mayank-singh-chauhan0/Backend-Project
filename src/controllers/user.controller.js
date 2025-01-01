@@ -8,20 +8,35 @@ import mongoose from "mongoose";
 
 
 const generateAccessAndRefreshToken = async(userId)=>{
-  try {
-    // refresh token is used to because bar bar pass nhi puchna pade
-    // at = user ko detet h
+  // try {
+  //   // refresh token is used to because bar bar pass nhi puchna pade
+  //   // at = user ko detet h
     
-    const user = await User.findById(userId);
-    const accessToken = user.generateAccessToken();
-    const refreshToken = user.generateRefreshToken();
-    user.refreshToken = refreshToken;
-    await user.save({validateBeforeSave:false})
-    //save krte time mongo ke model click hojate h like pass hona chiea usse bachene k lieye validateBeforeSave false krte h
-    return {accessToken , refreshToken};
-  } catch (error) {
-    throw new ApiError(500 , "token not generated" , error);
-  }
+  //   const user = await User.findById(userId);
+  //   const accessToken = user.generateAccessToken();
+  //   const refreshToken = user.generateRefreshToken();
+  //   user.refreshToken = refreshToken;
+  //   await user.save({validateBeforeSave:false})
+  //   //save krte time mongo ke model click hojate h like pass hona chiea usse bachene k lieye validateBeforeSave false krte h
+  //   return {accessToken , refreshToken};
+  // } catch (error) {
+  //   throw new ApiError(500 , "token not generated" , error);
+  // }
+
+  try {
+    const user = await User.findById(userId)
+    const accessToken = user.generateAccessToken()
+    const refreshToken = user.generateRefreshToken()
+
+    user.refreshToken = refreshToken
+    await user.save({ validateBeforeSave: false })
+
+    return {accessToken, refreshToken}
+
+
+} catch (error) {
+    throw new ApiError(500, "Something went wrong while generating referesh and access token")
+}
 }
 
 const registerUser = asyncHandler(async (req, res) => {
@@ -127,6 +142,7 @@ const loginUser = asyncHandler(async (req, res) => {
  json(new ApiResponse(200 , "login successfully" , {
   loggedInUser,
   accessToken,
+  
   refreshToken
 }));
 
@@ -145,43 +161,102 @@ const loginUser = asyncHandler(async (req, res) => {
 // ab aacess and refresh token ki bat krletr h isme kya h ki jo access token ka time km hota h to ham what we do we make a endpoint so whenever our accesstoken get expire we hit that endpoint and it give request to the mongodb and ask for new access token by verify itself with respect to refresh tokenm
   //endpoint rout m kenge menthod yha
 
-  const refreshAccessToken = asyncHandler(async(req, res) => {
-    //koi mobile app use krrha ho uske liye req.body use krete h
-    const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken;
-    if(!incomingRefreshToken) throw new ApiError(404 , "refresh token not found");
-    // JsonWebTokenError
-    //ab refresh token verify krna h
-    //direct user vala nhi use krnenge vo encoded hota h phele uske decoded krna padega
+//   const refreshAccessToken = asyncHandler(async(req, res) => {
+//     //koi mobile app use krrha ho uske liye req.body use krete h
+//     const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken;
+//     if (!incomingRefreshToken) {
+//       throw new ApiError(401, "unauthorized request")
+//   }
+//     // JsonWebTokenError
+//     //ab refresh token verify krna h
+//     //direct user vala nhi use krnenge vo encoded hota h phele uske decoded krna padega
 
-   try {
-    const decodedToken = jwt.verify(
-         incomingRefreshToken,
-         process.env.REFRESH_TOKEN_SECRET
-    )
-    // refresh token se user id mil jaega yad kro vhi dalaa tha refreshtoken bnte time usme id se mongo m querry marro aur details lelloo
-     const user =  await User.findById(decodedToken?._id);
-     if(!user) throw new ApiError(404 , "invalid refreshtoken");
- // match krte h token ko
+//    try {
+//     const decodedToken = jwt.verify(
+//       incomingRefreshToken,
+//       process.env.REFRESH_TOKEN_SECRET
+//   )
+
+//     // refresh token se user id mil jaega yad kro vhi dalaa tha refreshtoken bnte time usme id se mongo m querry marro aur details lelloo
+//      const user =  await User.findById(decodedToken?._id);
+//      if (!user) {
+//       throw new ApiError(401, "Invalid refresh token")
+//   } // match krte h token ko
  
-    if(incomingRefreshToken !== user.refreshToken) throw new ApiError(404 , "invalid refreshtoken");
-     
-     //ab naya access token bnana h aur cookie  m bej rhe ho to options to rkne padenge
-     const options = {
-       httpOnly : true,
-       secure : true
-     }
-     const {accessToken , newRefreshToken} = await generateAccessAndRefreshToken(user._id);
-     return res.status(200).
-     cookie("accessToken" ,  accessToken , options).
-     cookie("refreshToken" , newRefreshToken , options).
-     json(new ApiResponse(200 , "new access token generated" , {accessToken : accessToken ,refreshToken: newRefreshToken}))
-   } catch (error) {
-     throw new ApiError(404 , "invalid refreshtoken");
+//   if (incomingRefreshToken !== user?.refreshToken) {
+//     throw new ApiError(401, "Refresh token is expired or used")
     
-   }
+// }
+     
+//      //ab naya access token bnana h aur cookie  m bej rhe ho to options to rkne padenge
+//      const options = {
+//        httpOnly : true,
+//        secure : true
+//      }
+//     const {accessToken ,newRefreshToken} = await generateAccessAndRefreshToken(user._id);
+//      return res.status(200).
+//      cookie("accessToken" ,  accessToken , options).
+//      cookie("refreshToken" , newRefreshToken , options).
+//      json(
+//       new ApiResponse(200 , 
+//         "new access token generated" ,
+//          {accessToken ,refreshToken: newRefreshToken}))
+//    } catch (error) {
+//     console.log(error.message + "rec------------------------------------- ")
+//     throw new ApiError(404 , "invalid refreshtoken" , error?.message);
+    
+//    }
+
+// })
+
+const refreshAccessToken = asyncHandler(async (req, res) => {
+  const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken
+
+  if (!incomingRefreshToken) {
+      throw new ApiError(401, "unauthorized request")
+  }
+
+  try {
+      const decodedToken = jwt.verify(
+          incomingRefreshToken,
+          process.env.REFRESH_TOKEN_SECRET
+      )
+  
+      const user = await User.findById(decodedToken?._id)
+  
+      if (!user) {
+          throw new ApiError(401, "Invalid refresh token")
+      }
+  
+      if (incomingRefreshToken !== user?.refreshToken) {
+          throw new ApiError(401, "Refresh token is expired or used")
+          
+      }
+  
+      const options = {
+          httpOnly: true,
+          secure: true
+      }
+  
+      const {accessToken, refreshToken} = await generateAccessAndRefreshToken(user._id)
+  
+      return res
+      .status(200)
+      .cookie("refreshToken", refreshToken, options)
+      .cookie("accessToken", accessToken, options)
+ 
+      .json(
+          new ApiResponse(
+              200, 
+              {accessToken,refreshToken},
+              "Access token refreshed"
+          )
+      )
+  } catch (error) {
+      throw new ApiError(401, error?.message || "Invalid refresh token")
+  }
 
 })
-
 
  
 const logoutUser = asyncHandler(async(req, res) => {
@@ -441,16 +516,31 @@ const getWatchHistory = asyncHandler(async(req , res) =>{
   
 })
            
-export { registerUser ,
-   loginUser ,
-    logoutUser , 
-    refreshAccessToken , 
-    changePass , 
-    getCurrentUser , 
-    updateAccountDetails , 
-    updateUserAvatar , 
-    updateUserCoverImage,
-    getWatchHistory,
-    getUserChannelProfile
+
+export {
+  registerUser,
+  loginUser,
+  logoutUser,
+  refreshAccessToken,
+  changePass,
+  getCurrentUser,
+  updateAccountDetails,
+  updateUserAvatar,
+  updateUserCoverImage,
+  getUserChannelProfile,
+  getWatchHistory
+}
+
+// export { registerUser ,
+//    loginUser ,
+//     logoutUser , 
+//     refreshAccessToken , 
+//     changePass , 
+//     getCurrentUser , 
+//     updateAccountDetails , 
+//     updateUserAvatar , 
+//     updateUserCoverImage,
+//     getWatchHistory,
+//     getUserChannelProfile
   
-  };
+//   };
