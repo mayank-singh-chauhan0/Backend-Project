@@ -1,4 +1,4 @@
- import {asyncHandler}   from "../utils/asyncHandler.js"
+import {asyncHandler}   from "../utils/asyncHandler.js"
  import {ApiError}  from "../utils/ApiError.js"
 import{User}  from "../models/user.model.js"
 import {uploadOnCloudinary}  from "../utils/cloudinary.js"
@@ -133,6 +133,8 @@ const loginUser = asyncHandler(async (req, res) => {
 })
 
 // middleware se user ki detail mil jaegi bcz aase hi logout krne k liye crucial detaisl thodi dedenge vrna vo kisi ko bhi logout krdega
+
+
 //cookie parser middleware h usse hmnse cookie.res ka acess miljata h smae cookie.req kabhi miljaega
 // to iskke bad hm pna ak middleware bhi design krskte h
 //ab auth ka middleware likengw
@@ -142,12 +144,12 @@ const loginUser = asyncHandler(async (req, res) => {
 
 // ab aacess and refresh token ki bat krletr h isme kya h ki jo access token ka time km hota h to ham what we do we make a endpoint so whenever our accesstoken get expire we hit that endpoint and it give request to the mongodb and ask for new access token by verify itself with respect to refresh tokenm
   //endpoint rout m kenge menthod yha
-  const refreshAccessToken = asyncHandler(async (req, res) => {
-    const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken
 
-    if (!incomingRefreshToken) {
-        throw new ApiError(401, "unauthorized request")
-    }
+  const refreshAccessToken = asyncHandler(async(req, res) => {
+    //koi mobile app use krrha ho uske liye req.body use krete h
+    const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken;
+    if(!incomingRefreshToken) throw new ApiError(404 , "refresh token not found");
+    // JsonWebTokenError
     //ab refresh token verify krna h
     //direct user vala nhi use krnenge vo encoded hota h phele uske decoded krna padega
 
@@ -158,10 +160,10 @@ const loginUser = asyncHandler(async (req, res) => {
     )
     // refresh token se user id mil jaega yad kro vhi dalaa tha refreshtoken bnte time usme id se mongo m querry marro aur details lelloo
      const user =  await User.findById(decodedToken?._id);
-     if(!user) {throw new ApiError(404 , "invalid refreshtoken");}
+     if(!user) throw new ApiError(404 , "invalid refreshtoken");
  // match krte h token ko
  
-    if(incomingRefreshToken !== user?.refreshToken) {throw new ApiError(404 , "invalid refreshtoken");}
+    if(incomingRefreshToken !== user.refreshToken) throw new ApiError(404 , "invalid refreshtoken");
      
      //ab naya access token bnana h aur cookie  m bej rhe ho to options to rkne padenge
      const options = {
@@ -186,17 +188,17 @@ const logoutUser = asyncHandler(async(req, res) => {
   //user ka acess h middleware bnaya na abhi to ab kuch nhi krna bas user ka refresh token ko empty ktna h  
   await User.findByIdAndUpdate(
       req.user._id,
-      {
-          $unset: {
-              refreshToken: 1 // this removes the field from document
-          }
-      },
       // {
-      //   $set: {
-      //     refreshToken: undefined
-      //   }
-
+      //     $unset: {
+      //         refreshToken: 1 // this removes the field from document
+      //     }
       // },
+      {
+        $set: {
+          refreshToken: undefined
+        }
+
+      },
       {
           new: true
       }
