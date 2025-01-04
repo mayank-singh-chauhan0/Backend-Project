@@ -17,5 +17,5 @@ const asyncHandler=(reqHandler)=>{
         Promise.resolve(reqHandler(req,res,next)).catch((err)=>next(err))
     }
 } 
-
+export default asyncHandler;
 export {asyncHandler};

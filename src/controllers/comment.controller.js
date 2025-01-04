@@ -72,7 +72,7 @@ const getVideoComments = asyncHandler(async (req, res) => {
       },
     },
   ]);
-  if (!getComments) {
+  if (!getComment) {
     throw new ApiError(500, "Error while loading getComments section");
   }
 
@@ -172,4 +172,4 @@ const deleteComment = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, "Comment edited successfully"));
 });
 
-export { addComment, updateComment, deleteComment };
+export { addComment, updateComment, deleteComment , getVideoComments };
