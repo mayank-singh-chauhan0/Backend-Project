@@ -87,7 +87,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
     const { title, description } = req.body;
     if (title.trim() === "") throw new ApiError(400, "title is required");
     if (description.trim() === "") throw new ApiError(400, "description is required");
-    const videoFileLocalPath = req.files?.videFile[0].path;
+    const videoFileLocalPath = req.files?.videoFile[0].path;
     const thumbnailLocalPath = req.files?.thumbnail[0].path;
     if (!videoFileLocalPath) {
         throw new ApiError(400, "videoFileLocalPath is required");
@@ -98,14 +98,15 @@ const publishAVideo = asyncHandler(async (req, res) => {
     }
     const videoFile = await uploadOnCloudinary(videoFileLocalPath);
     const thumbnail = await uploadOnCloudinary(thumbnailLocalPath);
-    if (!videoPath) {
+    // console.log(videoFile.public_id);
+    if (!videoFile) {
         throw new ApiError(400, "Video file not found");
     }
 
     if (!thumbnail) {
         throw new ApiError(400, "Thumbnail not found");
     }
-    const video = Video.create({
+    const video = await Video.create({
         title,
         description,
         duration: videoFile.duration,
@@ -115,8 +116,9 @@ const publishAVideo = asyncHandler(async (req, res) => {
         thumbnail:thumbnail.url,
  
         owner: req.user?._id,
-        isPublished: false,
+        isPublish: false,
     })
+    // console.log(video);
     const videoUploaded = await Video.findById(video._id);
 
     if (!videoUploaded) {
