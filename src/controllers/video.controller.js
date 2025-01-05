@@ -69,7 +69,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
 
     },
         {
-            $unwid: "$ownerDetails"
+            $unwind: "$ownerDetails"
         })
     const videoAgrigate = await Video.aggregate(pipeline);
     const optios = {
