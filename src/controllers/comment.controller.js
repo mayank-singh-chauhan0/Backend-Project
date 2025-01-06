@@ -1,10 +1,11 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
-import { User } from "../models/user.model.js";
+// import { User } from "../models/user.model.js";
 import { Video } from "../models/video.model.js";
 import { Comment } from "../models/comment.model.js";
 import mongoose from "mongoose";
-
+import {ApiResponse} from "../utils/ApiResponse.js"
+import { Like } from "../models/like.model.js";
 const getVideoComments = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
   const { page = 1, limit = 10 } = req.query;
@@ -12,6 +13,7 @@ const getVideoComments = asyncHandler(async (req, res) => {
   if (!videoId) {
     throw new ApiError(400, "Please provide a valid video Id");
   }
+  
   const getComment = await Comment.aggregate([
     {
       $match: {
@@ -72,24 +74,26 @@ const getVideoComments = asyncHandler(async (req, res) => {
       },
     },
   ]);
+  // console.log(getComment);
   if (!getComment) {
     throw new ApiError(500, "Error while loading getComments section");
   }
-
+  // console.log(getComment , " cehbcwnedmw");
   const options = {
     page: parseInt(page, 10),
     limit: parseInt(limit, 10),
   };
+  // // 
+  // const comments = await Comment.aggregatePaginate(getComment, options);
 
-  const comments = await Comment.aggregatePaginate(getComments, options);
+  // if (!comments) {
+  //   throw new ApiError(500, "Error while loading comments section");
+  // }
 
-  if (!comments) {
-    throw new ApiError(500, "Error while loading comments section");
-  }
 
   return res
     .status(200)
-    .json(new ApiResponse(200, comments, "Comments fetched successfully!"));
+    .json(new ApiResponse(200, getComment, "Comments fetched successfully!"));
 });
 
 const addComment = asyncHandler(async (req, res) => {
@@ -99,7 +103,7 @@ const addComment = asyncHandler(async (req, res) => {
   if (!content) {
     throw new ApiError(400, "Content is required");
   }
-
+console.log(videoId , content);
   const video = await Video.findById(videoId);
 
   if (!video) {
@@ -155,6 +159,7 @@ const updateComment = asyncHandler(async (req, res) => {
 });
 const deleteComment = asyncHandler(async (req, res) => {
   const { commentId } = req.params;
+
   const comment = await Comment.findById(commentId);
   if (!comment) {
     throw new ApiError(404, "Comment not loaded");
@@ -162,14 +167,16 @@ const deleteComment = asyncHandler(async (req, res) => {
   if (comment?.owner.toString() !== req.user._id.toString()) {
     throw new ApiError(403, "You are not allowed to delete this comment");
   }
+  // console.log(comment , "  xqxqw");
   const deleteComm = await Comment.findByIdAndDelete(comment?._id);
+  
   await Like.deleteMany({
     comment: commentId,
     likedBy: req.user,
   });
   return res
     .status(200)
-    .json(new ApiResponse(200, "Comment edited successfully"));
+    .json(new ApiResponse(200, "Comment deleted successfully" , deleteComm));
 });
 
 export { addComment, updateComment, deleteComment , getVideoComments };
