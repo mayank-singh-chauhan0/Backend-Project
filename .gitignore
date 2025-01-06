@@ -12,7 +12,7 @@ lerna-debug.log*
 
 # Node modules
 node_modules/
-
+public/
 # Public folder
 public/
 # Diagnostic reports (https://nodejs.org/api/report.html)
