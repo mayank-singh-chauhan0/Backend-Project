@@ -13,6 +13,8 @@ lerna-debug.log*
 # Node modules
 node_modules/
 public/
+package-lock.json
+package.json
 # Public folder
 public/
 # Diagnostic reports (https://nodejs.org/api/report.html)
